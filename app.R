@@ -2,7 +2,6 @@ library(data.table)
 library(stringr)
 library(dplyr)
 library(tidyr)
-library(fasttime)
 library(shinydashboard)
 library(plotly)
 
@@ -86,9 +85,20 @@ ui <- dashboardPage(skin="yellow",
                                 ),
                                 fluidRow(
                                   box(
-                                    title="Filtered data for VPA partner",
-                                    width = 12,
-                                    dataTableOutput("datasetoutput1")
+                                    width = 2,
+                                    downloadButton("downloadData_all1", "All data in long format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_val1", "Value data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_qnt1", "Tonnage data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_rwe1", "RWE volume data in wide format")
                                   )
                                 )
                         ),
@@ -215,10 +225,34 @@ server <- function(input, output, session) {
     p3b
   })
   
-  output$datasetoutput1 <- renderDataTable (
-    vpapartnerdata_full()
-  )   
+  output$downloadData_all1 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats-", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      # Write to a file specified by the 'file' argument
+      write.table_with_header(vpapartnerdata_full(), file, "some descriptive text here", sep = ",", row.names=FALSE)
+    }
+  )
 
+  output$downloadData_val1 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats-", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "val") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$vpapartnerinput, ": annual Value in 1000 euro", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+    
   output$datasetoutput2 <- renderDataTable (
     eumemberdata_full()
   )     
@@ -331,14 +365,12 @@ server <- function(input, output, session) {
     setorder(dt, "partnername","declarantname","year")
   })        
   
-  #pivot datasets 
-  #pivotvaldata <- reactive({
-  #  dt <- dcast(dt, declarantname + partnername ~ year, value.var = "val")
-  #  setorder(dt, -"yr_2017", na.last = TRUE)
-  #  return(dt)
-  #})     
-  
-  
+  #function to add header to downloaded csv file 
+  write.table_with_header <- function(x, file, header, ...){
+    cat(header, '\n',  file = file)
+    write.table(x, file, append = T, ...)
+  }
+
   observe({ 
     #filter product group based on productgroupinput
     productsummaryfilter <- productsummary[productgroup==input$productgroupinput][order(order)]
