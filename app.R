@@ -160,18 +160,23 @@ ui <- dashboardPage(skin="yellow",
 
 # Define server logic
 server <- function(input, output, session) {
+
+  ax <- list(title = "", tickfont = list(color="red", size = 9))
+  ay <- list(title = "value (1000 euro)")
   
   output$p1a <- renderPlotly({
     dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p1a <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p1a <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p1a$elementId <- NULL
     p1a
   })    
   output$p1b <- renderPlotly({
     dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p1b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p1b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p1b$elementId <- NULL
     p1b
   })    
@@ -179,14 +184,16 @@ server <- function(input, output, session) {
   output$p2a <- renderPlotly({
     dt_partner <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2a$elementId <- NULL
     p2a
   })    
   output$p2b <- renderPlotly({
     dt_product <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p2b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2b$elementId <- NULL
     p2b
   })    
@@ -194,14 +201,16 @@ server <- function(input, output, session) {
   output$p3a <- renderPlotly({
     dt_partner <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2a$elementId <- NULL
     p2a
   })    
   output$p3b <- renderPlotly({
     dt_declarant <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p3b <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p3b <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p3b$elementId <- NULL
     p3b
   })
