@@ -2,7 +2,6 @@ library(data.table)
 library(stringr)
 library(dplyr)
 library(tidyr)
-library(fasttime)
 library(shinydashboard)
 library(plotly)
 
@@ -86,9 +85,20 @@ ui <- dashboardPage(skin="yellow",
                                 ),
                                 fluidRow(
                                   box(
-                                    title="Filtered data for VPA partner",
-                                    width = 12,
-                                    dataTableOutput("datasetoutput1")
+                                    width = 2,
+                                    downloadButton("downloadData_all1", "All data in long format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_val1", "Value data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_qnt1", "Tonnage data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_rwe1", "RWE volume data in wide format")
                                   )
                                 )
                         ),
@@ -117,9 +127,20 @@ ui <- dashboardPage(skin="yellow",
                                 ),
                                 fluidRow(
                                   box(
-                                    title="Filtered data for EU member",
-                                    width = 12,
-                                    dataTableOutput("datasetoutput2")
+                                    width = 2,
+                                    downloadButton("downloadData_all2", "All data in long format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_val2", "Value data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_qnt2", "Tonnage data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_rwe2", "RWE volume data in wide format")
                                   )
                                 )
                         ),
@@ -148,9 +169,20 @@ ui <- dashboardPage(skin="yellow",
                                 ),
                                 fluidRow(
                                   box(
-                                    title="Filtered data for product",
-                                    width = 12,
-                                    dataTableOutput("datasetoutput3")
+                                    width = 2,
+                                    downloadButton("downloadData_all3", "All data in long format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_val3", "Value data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_qnt3", "Tonnage data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_rwe3", "RWE volume data in wide format")
                                   )
                                 )
                         )
@@ -160,18 +192,23 @@ ui <- dashboardPage(skin="yellow",
 
 # Define server logic
 server <- function(input, output, session) {
+
+  ax <- list(title = "", tickfont = list(color="red", size = 9))
+  ay <- list(title = "value (1000 euro)")
   
   output$p1a <- renderPlotly({
     dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p1a <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p1a <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p1a$elementId <- NULL
     p1a
   })    
   output$p1b <- renderPlotly({
     dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p1b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p1b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p1b$elementId <- NULL
     p1b
   })    
@@ -179,14 +216,16 @@ server <- function(input, output, session) {
   output$p2a <- renderPlotly({
     dt_partner <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2a$elementId <- NULL
     p2a
   })    
   output$p2b <- renderPlotly({
     dt_product <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p2b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2b$elementId <- NULL
     p2b
   })    
@@ -194,29 +233,197 @@ server <- function(input, output, session) {
   output$p3a <- renderPlotly({
     dt_partner <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p2a$elementId <- NULL
     p2a
   })    
   output$p3b <- renderPlotly({
     dt_declarant <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p3b <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd")
+    p3b <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay)
     p3b$elementId <- NULL
     p3b
   })
   
-  output$datasetoutput1 <- renderDataTable (
-    vpapartnerdata_full()
-  )   
+  output$downloadData_all1 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_vpapartner_full_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      # Write to a file specified by the 'file' argument
+      headertxt <- paste("EU member state imports of timber products from ", input$vpapartnerinput, ": annual Value in 1000 euro & quantity in metric tonnes & rwe in cubic meters", sep="")
+      write.table_with_header(vpapartnerdata_full(), file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
 
-  output$datasetoutput2 <- renderDataTable (
-    eumemberdata_full()
-  )     
+  output$downloadData_val1 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_vpapartner_val_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "val") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$vpapartnerinput, ": annual Value in 1000 euro", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+
+    output$downloadData_qnt1 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_vpapartner_qnt_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "qnt") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$vpapartnerinput, ": annual quantity in metric tonnes", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
   
-  output$datasetoutput3 <- renderDataTable (
-    productdata_full()
-  )  
+
+  output$downloadData_rwe1 <- downloadHandler(
+      
+      filename = function() {
+        paste("imm_stats_vpapartner_rwe_", Sys.Date(), ".csv", sep="")
+      },
+      
+      content = function(file) {
+        dt <- vpapartnerdata_full() %>% 
+          dcast(declarantname + productgroup ~ year, value.var = "rwe") %>% 
+          setorder(-"yr_2017", na.last = TRUE)
+        headertxt <- paste("EU member state imports of timber products from ", input$vpapartnerinput, ": annual roundwood equivalent volume in cubic meters", sep="")
+        write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+      }
+  )
+    
+  output$downloadData_all2 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_eumembers_full_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      # Write to a file specified by the 'file' argument
+      headertxt <- paste(input$declarantinput, " imports of timber products from vpa partner countries: annual Value in 1000 euro & quantity in metric tonnes & rwe in cubic meters", sep="")
+      write.table_with_header(eumemberdata_full(), file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_val2 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_eumembers_val_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- eumemberdata_full() %>% 
+        dcast(partnername + productgroup ~ year, value.var = "val") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste(input$declarantinput, " imports of timber products from vpa partner countries: annual Value in 1000 euro", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_qnt2 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_eumembers_qnt_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- eumemberdata_full() %>% 
+        dcast(partnername + productgroup ~ year, value.var = "qnt") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste(input$declarantinput, " imports of timber products from vpa partner countries: quantity in metric tonnes", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  
+  output$downloadData_rwe2 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_eumembers_rwe_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- eumemberdata_full() %>% 
+        dcast(partnername + productgroup ~ year, value.var = "rwe") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste(input$declarantinput, " imports of timber products from vpa partner countries: annual Value in 1000 euro & quantity in metric tonnes & rwe in cubic meters", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )        
+
+  output$downloadData_all3 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_products_full_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      # Write to a file specified by the 'file' argument
+      headertxt <- paste("EU member imports of ", input$productsummaryinput," from vpa partner countries: annual Value in 1000 euro & quantity in metric tonnes & rwe in cubic meters", sep="")
+      write.table_with_header(productdata_full(), file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_val3 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_products_val_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- productdata_full() %>% 
+        dcast(partnername + declarantname ~ year, value.var = "val") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member imports of ", input$productsummaryinput," from vpa partner countries: annual Value in 1000 euro", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_qnt3 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_products_qnt_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- productdata_full() %>% 
+        dcast(partnername + declarantname ~ year, value.var = "qnt") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member imports of ", input$productsummaryinput," from vpa partner countries: quantity in metric tonnes", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  
+  output$downloadData_rwe3 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_products_rwe_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- productdata_full() %>% 
+        dcast(partnername + declarantname ~ year, value.var = "rwe") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member imports of ", input$productsummaryinput," from vpa partner countries: rwe in cubic meters", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )        
+  
   
   #prepare vector of product codes from input product group and product summary
   filterproducts <- reactive({
@@ -322,14 +529,12 @@ server <- function(input, output, session) {
     setorder(dt, "partnername","declarantname","year")
   })        
   
-  #pivot datasets 
-  #pivotvaldata <- reactive({
-  #  dt <- dcast(dt, declarantname + partnername ~ year, value.var = "val")
-  #  setorder(dt, -"yr_2017", na.last = TRUE)
-  #  return(dt)
-  #})     
-  
-  
+  #function to add header to downloaded csv file 
+  write.table_with_header <- function(x, file, header, ...){
+    cat(header, '\n',  file = file)
+    write.table(x, file, append = T, ...)
+  }
+
   observe({ 
     #filter product group based on productgroupinput
     productsummaryfilter <- productsummary[productgroup==input$productgroupinput][order(order)]
