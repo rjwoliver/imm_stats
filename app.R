@@ -51,15 +51,27 @@ ui <- dashboardPage(skin="yellow",
                     
                     dashboardSidebar(
                       sidebarMenu(id="sbmenu",
+                                  menuItem("Home", tabName = "home", icon = icon("home")),
                                   menuItem("VPA partners", tabName = "vpapartners", icon = icon("globe")),
                                   menuItem("EU member states", tabName = "eumembers", icon = icon("eur")),
-                                  menuItem("Products", tabName = "products", icon = icon("pagelines"))
+                                  menuItem("Products", tabName = "products", icon = icon("pagelines")),
+                                  menuItem("Technical", tabName = "technical", icon = icon("question-circle"))
                       )
                     ),
                     
                     
                     dashboardBody(
                       tabItems(
+                        tabItem(tabName="home",
+                                fluidRow(
+                                  box(
+                                    title="EU FLEGT Trade Dashboard",
+                                    width = 12,
+                                    includeHTML('www/home.html')
+                                  )
+                                )
+                        ),
+
                         tabItem(tabName="vpapartners",
                                 fluidRow(
                                   box(
@@ -183,6 +195,15 @@ ui <- dashboardPage(skin="yellow",
                                   box(
                                     width = 2,
                                     downloadButton("downloadData_rwe3", "RWE volume data in wide format")
+                                  )
+                                )
+                        ),
+                        tabItem(tabName="technical",
+                                fluidRow(
+                                  box(
+                                    title="FLEGT IMM COMEXT data analysis procedures",
+                                    width = 12,
+                                    includeHTML('www/technical.html')
                                   )
                                 )
                         )
