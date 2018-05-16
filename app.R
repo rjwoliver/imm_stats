@@ -5,18 +5,41 @@ library(tidyr)
 library(shinydashboard)
 library(plotly)
 
-eui_column_names <-c("declarantcode", "partnercode", "productcode", "year", "val", "qnt", "sup", "rwe", "flag") 
-eui_column_classes <- c("character", "character", "character", "character", "numeric", "numeric", "numeric", "numeric", "character") 
-
 #read trade data as data.table
-eu_imports_yr <- fread('data/eu_imports_yr.csv', header = T, sep = ',', colClasses = eui_column_classes)
-setnames(eu_imports_yr, eui_column_names)
-products <- fread('data/products.csv', header = T, sep = ',')
-declarants <- fread('data/declarants.csv', header = T, sep = ',')
-productsummary <- fread('data/productsummary.csv', header = T, sep = ',')
-vpapartners <- fread('data/vpapartners.csv', header = T, sep = ',')
-partnergroups <- fread('data/partnergroups.csv', header = T, sep = ',')
-vpapartners <- fread('data/vpapartners.csv', header = T, sep = ',')
+column_names <-c("declarantcode", "partnercode", "productcode", "year", "val", "qnt", "sup", "rwe", "flag") 
+column_classes <- c("character", "character", "character", "character", "numeric", "numeric", "numeric", "numeric", "character") 
+eu_imports_yr <- fread('data/eu_imports_yr.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(eu_imports_yr, column_names)
+
+column_names <-c("order","productcode","productgroup","productsummary","description","eutr") 
+column_classes <- c("character", "character", "character", "character", "character", "numeric")
+products <- fread('data/products.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(products, column_names)
+
+column_names <-c("declarantcode","startyr","endyr","declarantname","declarantlettercode","declarantisocode","euwithdrawal") 
+column_classes <- c("character", "numeric", "numeric", "character", "character", "character", "numeric")
+declarants <- fread('data/declarants.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(declarants, column_names)
+
+column_names <-c("order","productgroup","productsummary") 
+column_classes <- c("character", "character", "character")
+productsummary <- fread('data/productsummary.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(productsummary, column_names)
+
+column_names <-c("order","vpagroup","partner","partnercode") 
+column_classes <- c("character", "character", "character", "character")
+vpapartners <- fread('data/vpapartners.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(vpapartners, column_names)
+
+column_names <-c("groupcategory","group","partnername","partnercode") 
+column_classes <- c("character", "character", "character", "character")
+partnergroups <- fread('data/partnergroups.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(partnergroups, column_names)
+
+column_names <-c("order","partnercode","partner") 
+column_classes <- c("character", "character", "character")
+nonvpapartners <- fread('data/nonvpapartners.csv', header = F, sep = ',', colClasses = column_classes)
+setnames(nonvpapartners, column_names)
 
 #set data table keys
 #setkey(eu_imports_mn, "declarantcode", "partnercode", "productcode")
@@ -25,8 +48,7 @@ setkey(products, "order", "productcode")
 setkey(declarants, "declarantname")
 setkey(productsummary, "order", "productgroup")
 setkey(vpapartners, "order")
-
-#eu_imports_mn[,posix:=fastPOSIXct(datadate)]
+setkey(nonvpapartners, "order")
 
 #create keyed list of unique partners
 partners <- partnergroups[group == ".World"]
@@ -47,12 +69,16 @@ majorproductgroups <- unique(majorproductgroups)
 ui <- dashboardPage(skin="yellow",
                     
                     # Application title
-                    dashboardHeader(title="FLEGT IMM dashboard"),
+                    dashboardHeader(title = tags$a(href='http://www.flegtimm.eu',
+                                                   tags$img(src='IMM_header_logo.png')
+                                                   )
+                                    ),
                     
                     dashboardSidebar(
                       sidebarMenu(id="sbmenu",
-                                  menuItem("Home", tabName = "home", icon = icon("home")),
+                                  menuItem("Stats intro", tabName = "intro", icon = icon("home")),
                                   menuItem("VPA partners", tabName = "vpapartners", icon = icon("globe")),
+                                  menuItem("Other tropical suppliers", tabName = "nonvpapartners", icon = icon("circle")),
                                   menuItem("EU member states", tabName = "eumembers", icon = icon("eur")),
                                   menuItem("Products", tabName = "products", icon = icon("pagelines")),
                                   menuItem("Technical", tabName = "technical", icon = icon("question-circle"))
@@ -61,13 +87,40 @@ ui <- dashboardPage(skin="yellow",
                     
                     
                     dashboardBody(
+                      tags$style(".nav-tabs-custom .nav-tabs li.active {
+                                    border-top-color: #00a65a;
+                                  }
+                                  .skin-yellow .main-header .logo {
+                                    background-color: #dddddd;
+                                  }
+                                 
+                                  .skin-yellow .main-header .logo:hover {
+                                    background-color: #dddddd;
+                                  }
+                                 
+                                  .skin-yellow .main-header .navbar .sidebar-toggle:hover{
+                                    background-color: #dddddd;
+                                  }
+                                   .skin-yellow .main-header .navbar {
+                                   background-color: #dddddd;
+                                  }"
+                      ),
                       tabItems(
-                        tabItem(tabName="home",
+                        tabItem(tabName="intro",
                                 fluidRow(
                                   box(
                                     title="EU FLEGT Trade Dashboard",
-                                    width = 12,
+                                    solidHeader=TRUE,
+                                    status="success",
+                                    width = 9,
                                     includeHTML('www/home.html')
+                                  ),
+                                  box(
+                                    title="Donors",
+                                    solidHeader=TRUE,
+                                    status="success",
+                                    width = 3,
+                                    includeHTML('www/supporters.html')
                                   )
                                 )
                         ),
@@ -76,23 +129,31 @@ ui <- dashboardPage(skin="yellow",
                                 fluidRow(
                                   box(
                                     title="Select VPA Partner",
+                                    solidHeader=TRUE,
+                                    status="success",
                                     width = 12,
                                     selectInput('vpagroupinput', 'Select FLEGT group:', choices = vpagroups$vpagroup),
                                     selectInput('vpapartnerinput', 'Select partner:', choices = vpapartners$partner)
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by EU member country",
+                                  tabBox(
+                                    title="Imports by EU member country",
+                                    id="vpapartnerstabset1",
                                     width = 12,
-                                    plotlyOutput("p1a")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p1a_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p1a_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p1a_rwe"))
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by product group",
+                                  tabBox(
+                                    title="EU imports  by product group",
+                                    id="vpapartnerstabset2",
                                     width = 12,
-                                    plotlyOutput("p1b")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p1b_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p1b_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p1b_rwe"))
                                   )
                                 ),
                                 fluidRow(
@@ -115,26 +176,84 @@ ui <- dashboardPage(skin="yellow",
                                 )
                         ),
                         
+                        tabItem(tabName="nonvpapartners",
+                                fluidRow(
+                                  box(
+                                    title="Select non-VPA country",
+                                    solidHeader=TRUE,
+                                    status="success",
+                                    width = 12,
+                                    selectInput('nonvpapartnerinput', 'Select non-VPA country:', choices = nonvpapartners$partner)
+                                  )
+                                ),
+                                fluidRow(
+                                  tabBox(
+                                    title="Import value by EU member country",
+                                    id="nonvpapartnerstabset1",
+                                    width = 12,
+                                    tabPanel("Value 1000 euro", plotlyOutput("p4a_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p4a_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p4a_rwe"))
+                                  )
+                                ),
+                                fluidRow(
+                                  tabBox(
+                                    title="EU import Value by product group",
+                                    id="nonvpapartnerstabset1",
+                                    width = 12,
+                                    tabPanel("Value 1000 euro", plotlyOutput("p4b_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p4b_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p4b_rwe"))
+                                  )
+                                ),
+                                fluidRow(
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_all4", "All data in long format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_val4", "Value data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_qnt4", "Tonnage data in wide format")
+                                  ),
+                                  box(
+                                    width = 2,
+                                    downloadButton("downloadData_rwe4", "RWE volume data in wide format")
+                                  )
+                                )
+                        ),
+
                         tabItem(tabName="eumembers",
                                 fluidRow(
                                   box(
                                     title="Select EU member",
+                                    solidHeader=TRUE,
+                                    status="success",
                                     width = 12,
                                     selectInput('declarantinput', 'Select EU member:', choices = declarants$declarantname)
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by VPA partner country",
+                                  tabBox(
+                                    title="EU import by VPA partner country",
+                                    id="eumemberstabset1",
                                     width = 12,
-                                    plotlyOutput("p2a")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p2a_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p2a_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p2a_rwe"))
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by product group",
+                                  tabBox(
+                                    title="EU import by product group",
+                                    id="eumemberstabset2",
                                     width = 12,
-                                    plotlyOutput("p2b")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p2b_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p2b_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p2b_rwe"))
                                   )
                                 ),
                                 fluidRow(
@@ -160,23 +279,31 @@ ui <- dashboardPage(skin="yellow",
                                 fluidRow(
                                   box(
                                     title="Select product",
+                                    solidHeader=TRUE,
+                                    status="success",
                                     width = 12,
                                     selectInput('productgroupinput', 'Select product group:', choices = majorproductgroups$productgroup),
                                     selectInput('productsummaryinput', 'Select product:', choices = productsummary$productsummary)
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by VPA partner country",
+                                  tabBox(
+                                    title="EU import by VPA partner country",
+                                    id="productstabset1",
                                     width = 12,
-                                    plotlyOutput("p3a")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p3a_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p3a_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p3a_rwe"))
                                   )
                                 ),
                                 fluidRow(
-                                  box(
-                                    title="Value by EU member",
+                                  tabBox(
+                                    title="Import by EU member",
+                                    id="productstabset2",
                                     width = 12,
-                                    plotlyOutput("p3b")
+                                    tabPanel("Value 1000 euro", plotlyOutput("p3b_val")),
+                                    tabPanel("Metric tonnes", plotlyOutput("p3b_qnt")),
+                                    tabPanel("Roundwood equivalent m3", plotlyOutput("p3b_rwe"))
                                   )
                                 ),
                                 fluidRow(
@@ -202,6 +329,8 @@ ui <- dashboardPage(skin="yellow",
                                 fluidRow(
                                   box(
                                     title="FLEGT IMM COMEXT data analysis procedures",
+                                    solidHeader=TRUE,
+                                    status="success",
                                     width = 12,
                                     includeHTML('www/technical.html')
                                   )
@@ -215,57 +344,215 @@ ui <- dashboardPage(skin="yellow",
 server <- function(input, output, session) {
 
   ax <- list(title = "", tickfont = list(color="red", size = 9))
-  ay <- list(title = "value (1000 euro)")
+  ay_val <- list(title = "value (1000 euro)")
+  ay_qnt <- list(title = "metric tonnes")
+  ay_rwe <- list(title = "RWE cubic meters")
   
-  output$p1a <- renderPlotly({
+  output$p1a_val <- renderPlotly({
     dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p1a <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p1a$elementId <- NULL
-    p1a
+    p1a_val <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p1a_val$elementId <- NULL
+    p1a_val
   })    
-  output$p1b <- renderPlotly({
+  output$p1b_val <- renderPlotly({
     dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p1b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p1b$elementId <- NULL
-    p1b
+    p1b_val <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p1b_val$elementId <- NULL
+    p1b_val
   })    
   
-  output$p2a <- renderPlotly({
+  output$p1a_qnt <- renderPlotly({
+    dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("qnt")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p1a_qnt <- plot_ly(dt_declarant, x = ~declarantname, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p1a_qnt$elementId <- NULL
+    p1a_qnt
+  })    
+  output$p1b_qnt <- renderPlotly({
+    dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("qnt")]	  
+    setorder(dt_product, "productgroup","year")
+    p1b_qnt <- plot_ly(dt_product, x = ~productgroup, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p1b_qnt$elementId <- NULL
+    p1b_qnt
+  })
+  
+  output$p1a_rwe <- renderPlotly({
+    dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("rwe")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p1a_rwe <- plot_ly(dt_declarant, x = ~declarantname, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p1a_rwe$elementId <- NULL
+    p1a_rwe
+  })    
+  output$p1b_rwe <- renderPlotly({
+    dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("rwe")]	  
+    setorder(dt_product, "productgroup","year")
+    p1b_rwe <- plot_ly(dt_product, x = ~productgroup, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p1b_rwe$elementId <- NULL
+    p1b_rwe
+  })
+  
+  output$p4a_val <- renderPlotly({
+    dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p4a_val <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p4a_val$elementId <- NULL
+    p4a_val
+  })    
+  output$p4b_val <- renderPlotly({
+    dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
+    setorder(dt_product, "productgroup","year")
+    p4b_val <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p4b_val$elementId <- NULL
+    p4b_val
+  })
+  
+  output$p4a_qnt <- renderPlotly({
+    dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("qnt")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p4a_qnt <- plot_ly(dt_declarant, x = ~declarantname, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p4a_qnt$elementId <- NULL
+    p4a_qnt
+  })    
+  output$p4b_qnt <- renderPlotly({
+    dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("qnt")]	  
+    setorder(dt_product, "productgroup","year")
+    p4b_qnt <- plot_ly(dt_product, x = ~productgroup, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p4b_qnt$elementId <- NULL
+    p4b_qnt
+  })
+  
+  output$p4a_rwe <- renderPlotly({
+    dt_declarant <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("rwe")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p4a_rwe <- plot_ly(dt_declarant, x = ~declarantname, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p4a_rwe$elementId <- NULL
+    p4a_rwe
+  }) 
+  
+  output$p4b_rwe <- renderPlotly({
+    dt_product <- vpapartnerdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("rwe")]	  
+    setorder(dt_product, "productgroup","year")
+    p4b_rwe <- plot_ly(dt_product, x = ~productgroup, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p4b_rwe$elementId <- NULL
+    p4b_rwe
+  })
+  
+  output$p2a_val <- renderPlotly({
     dt_partner <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p2a$elementId <- NULL
-    p2a
+    p2a_val <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p2a_val$elementId <- NULL
+    p2a_val
   })    
-  output$p2b <- renderPlotly({
+  output$p2b_val <- renderPlotly({
     dt_product <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("val")]	  
     setorder(dt_product, "productgroup","year")
-    p2b <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p2b$elementId <- NULL
-    p2b
+    p2b_val <- plot_ly(dt_product, x = ~productgroup, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p2b_val$elementId <- NULL
+    p2b_val
   })    
   
-  output$p3a <- renderPlotly({
+  output$p2a_qnt <- renderPlotly({
+    dt_partner <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("qnt")]	  
+    setorder(dt_partner, "partnername","year")
+    p2a_qnt <- plot_ly(dt_partner, x = ~partnername, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p2a_qnt$elementId <- NULL
+    p2a_qnt
+  })    
+
+  output$p2b_qnt <- renderPlotly({
+    dt_product <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("qnt")]	  
+    setorder(dt_product, "productgroup","year")
+    p2b_qnt <- plot_ly(dt_product, x = ~productgroup, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p2b_qnt$elementId <- NULL
+    p2b_qnt
+  })
+  
+  output$p2a_rwe <- renderPlotly({
+    dt_partner <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("rwe")]	  
+    setorder(dt_partner, "partnername","year")
+    p2a_rwe <- plot_ly(dt_partner, x = ~partnername, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p2a_rwe$elementId <- NULL
+    p2a_rwe
+  })    
+  
+  output$p2b_rwe <- renderPlotly({
+    dt_product <- eumemberdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(productgroup, year), .SDcols=c("rwe")]	  
+    setorder(dt_product, "productgroup","year")
+    p2b_rwe <- plot_ly(dt_product, x = ~productgroup, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p2b_rwe$elementId <- NULL
+    p2b_rwe
+  })
+  
+  output$p3a_val <- renderPlotly({
     dt_partner <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("val")]	  
     setorder(dt_partner, "partnername","year")
-    p2a <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p2a$elementId <- NULL
-    p2a
+    p2a_val <- plot_ly(dt_partner, x = ~partnername, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p2a_val$elementId <- NULL
+    p2a_val
   })    
-  output$p3b <- renderPlotly({
+  output$p3b_val <- renderPlotly({
     dt_declarant <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("val")]	  
     setorder(dt_declarant, "declarantname","year")
-    p3b <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
-      layout(xaxis = ax, yaxis = ay)
-    p3b$elementId <- NULL
-    p3b
+    p3b_val <- plot_ly(dt_declarant, x = ~declarantname, y = ~val, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_val)
+    p3b_val$elementId <- NULL
+    p3b_val
+  })
+  
+  output$p3a_qnt <- renderPlotly({
+    dt_partner <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("qnt")]	  
+    setorder(dt_partner, "partnername","year")
+    p2a_qnt <- plot_ly(dt_partner, x = ~partnername, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p2a_qnt$elementId <- NULL
+    p2a_qnt
+  })    
+  output$p3b_qnt <- renderPlotly({
+    dt_declarant <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("qnt")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p3b_qnt <- plot_ly(dt_declarant, x = ~declarantname, y = ~qnt, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_qnt)
+    p3b_qnt$elementId <- NULL
+    p3b_qnt
+  })
+  
+  output$p3a_rwe <- renderPlotly({
+    dt_partner <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(partnername, year), .SDcols=c("rwe")]	  
+    setorder(dt_partner, "partnername","year")
+    p2a_rwe <- plot_ly(dt_partner, x = ~partnername, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p2a_rwe$elementId <- NULL
+    p2a_rwe
+  })    
+  output$p3b_rwe <- renderPlotly({
+    dt_declarant <- productdata_full()[, lapply(.SD, sum, na.rm=TRUE), by=.(declarantname, year), .SDcols=c("rwe")]	  
+    setorder(dt_declarant, "declarantname","year")
+    p3b_rwe <- plot_ly(dt_declarant, x = ~declarantname, y = ~rwe, type = "bar", split = ~year, color = ~year, colors="OrRd") %>% 
+      layout(xaxis = ax, yaxis = ay_rwe)
+    p3b_rwe$elementId <- NULL
+    p3b_rwe
   })
   
   output$downloadData_all1 <- downloadHandler(
@@ -327,6 +614,65 @@ server <- function(input, output, session) {
       }
   )
     
+  output$downloadData_all4 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_nonvpapartner_full_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      # Write to a file specified by the 'file' argument
+      headertxt <- paste("EU member state imports of timber products from ", input$nonvpapartnerinput, ": annual Value in 1000 euro & quantity in metric tonnes & rwe in cubic meters", sep="")
+      write.table_with_header(vpapartnerdata_full(), file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_val4 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_nonvpapartner_val_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "val") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$nonvpapartnerinput, ": annual Value in 1000 euro", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  output$downloadData_qnt4 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_nonvpapartner_qnt_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "qnt") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$nonvpapartnerinput, ": annual quantity in metric tonnes", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+  
+  
+  output$downloadData_rwe4 <- downloadHandler(
+    
+    filename = function() {
+      paste("imm_stats_nonvpapartner_rwe_", Sys.Date(), ".csv", sep="")
+    },
+    
+    content = function(file) {
+      dt <- vpapartnerdata_full() %>% 
+        dcast(declarantname + productgroup ~ year, value.var = "rwe") %>% 
+        setorder(-"yr_2017", na.last = TRUE)
+      headertxt <- paste("EU member state imports of timber products from ", input$nonvpapartnerinput, ": annual roundwood equivalent volume in cubic meters", sep="")
+      write.table_with_header(dt, file, headertxt, sep = ",", row.names=FALSE)
+    }
+  )
+
   output$downloadData_all2 <- downloadHandler(
     
     filename = function() {
@@ -502,15 +848,18 @@ server <- function(input, output, session) {
       )
       #lookup partner codes    
       if (substr(input$vpapartnerinput, 1, 3) == "All") {
-        vpapartnercodevector <- vpapartners[vpagroup==input$vpagroupinput, partnercode]
+        partnercodevector <- vpapartners[vpagroup==input$vpagroupinput, partnercode]
       } else {
-        vpapartnercodevector <- vpapartners[partner==input$vpapartnerinput, partnercode]
+        partnercodevector <- vpapartners[partner==input$vpapartnerinput, partnercode]
       } 
+    } else if (input$sbmenu == "nonvpapartners") {
+      # if non-vpa partners is chosen - vector contains selected non-vpa supplier
+      partnercodevector <- nonvpapartners[partner==input$nonvpapartnerinput, partnercode]
     } else {
-      # vpa partners tab not chosen - vector contains all vpa partners
-      vpapartnercodevector <- vpapartners[, partnercode]
+      # vpa partners and non-vpa partners tab not chosen - vector contains all vpa partners
+      partnercodevector <- vpapartners[, partnercode]
     }
-    return(vpapartnercodevector)
+    return(partnercodevector)
   })
   
   #prepare dataset using vectors of declarant codes, partner codes and products codes
